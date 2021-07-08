@@ -1,0 +1,55 @@
+- hosts: remoto
+  become: yes
+  gather_facts: False
+
+  tasks:
+
+  - name: clone repo
+    git:
+      repo: https://github.com/LeonardoDG2084/iaac_slacko-api.git
+      dest: /vagrant/ansible-slacko/files
+      version: master
+
+  - name: install packages
+    package:
+      name: mongodb
+      update_cache: yes
+      state: present
+
+  - name: enable and start mongodb service
+    systemd:
+       state: started
+       name: mongodb
+       enabled: yes
+
+  - name: create directory
+    file:
+      path: /opt/slacko-api/
+      state: directory
+  
+  - name: copy files
+    copy:
+      src: /vagrant/ansible-slacko/files/
+      dest: /opt/slacko-api
+      mode: preserve
+
+  - name: install python requirements
+    pip:
+      requirements: /opt/slacko-api/requeriments.txt
+
+  - name: Create unit-file
+    copy:
+      src: slacko-api.service
+      dest: /lib/systemd/system/slacko-api.service
+      owner: root
+      mode: 0644
+
+  - name: reload systemd
+    systemd:
+      daemon_reload: yes
+
+  - name: Enable ans start slacko-api service
+    systemd: 
+      name: slacko-api.service
+      enabled: yes
+      state: started
